@@ -19,7 +19,7 @@ Add-Type -AssemblyName PresentationFramework
 [System.Windows.Forms.Application]::EnableVisualStyles()
 #Main
 $Main                            = New-Object system.Windows.Forms.Form
-$Main.ClientSize                 = '600,400'
+$Main.ClientSize                 = '600,600'
 $Main.text                       = "Get-RSATTester"
 $Main.BackColor                  = "#f5a623"
 $Main.TopMost                    = $false
@@ -31,7 +31,7 @@ $TextBoxResult                   = New-Object system.Windows.Forms.TextBox
 $TextBoxResult.multiline         = $true
 $TextBoxResult.ReadOnly         = $true
 $TextBoxResult.width             = 590
-$TextBoxResult.height            = 323
+$TextBoxResult.height            = 523
 $TextBoxResult.location          = New-Object System.Drawing.Point(5,30)
 $TextBoxResult.Font              = 'Microsoft Sans Serif,8'
 $TextBoxResult.Scrollbars        = "Vertical"
@@ -49,7 +49,7 @@ $ButtonInstall.text              = "Installer tous les RSAT"
 $ButtonInstall.width             = 285
 $ButtonInstall.height            = 30
 $ButtonInstall.visible           = $false
-$ButtonInstall.location          = New-Object System.Drawing.Point(5,361)
+$ButtonInstall.location          = New-Object System.Drawing.Point(5,561)
 $ButtonInstall.Font              = 'Microsoft Sans Serif,9'
 #Bouton de d'installation
 $ButtonUnInstall                   = New-Object system.Windows.Forms.Button
@@ -57,7 +57,7 @@ $ButtonUnInstall.text              = "Désinstaller tous les RSAT"
 $ButtonUnInstall.width             = 285
 $ButtonUnInstall.height            = 30
 $ButtonUnInstall.visible           = $false
-$ButtonUnInstall.location          = New-Object System.Drawing.Point(310,361)
+$ButtonUnInstall.location          = New-Object System.Drawing.Point(310,561)
 $ButtonUnInstall.Font              = 'Microsoft Sans Serif,9'
 #Concaténation de l'UI
 $Main.controls.AddRange(@($TextBoxResult,$Label1,$ButtonInstall,$ButtonUnInstall))
@@ -72,20 +72,20 @@ $AllRSAT = Get-WindowsCapability -Name RSAT* -Online
 $NonInstalledRSAT = $AllRSAT  | Where-Object State -ne "Installed" #Remonte uniquement les RSAT non installés
 $InstalledRSAT = $AllRSAT  | Where-Object State -eq "Installed" #Remonte uniquement les RSAT non installés
 if ($NonInstalledRSAT.length -gt 0 ) { 
-    $TextBoxResult.text = "Les outils RSAT qui ne sont pas installés:"
+    $TextBoxResult.text = "Les outils RSAT qui ne sont pas installés :"
     $TextBoxResult.text += $NonInstalledRSAT | Format-Table -HideTableHeaders Displayname | Out-String
     $ButtonInstall.Visible = $true
 }
 else {
-    $TextBoxResult.text += "L'ensemble des outils RSAT disponibles online sont installés`r`n"
+    $TextBoxResult.text += "L'ensemble des outils RSAT disponibles online sont installés sur cette machine`r`n"
 }
 if ($InstalledRSAT.length -gt 0 ) { 
-    $TextBoxResult.text += "Les outils RSAT qui sont installés:"
+    $TextBoxResult.text += "Les outils RSAT qui sont installés :"
     $TextBoxResult.text += $InstalledRSAT | Format-Table -HideTableHeaders Displayname | Out-String
     $ButtonUnInstall.visible = $true
 }
 else {
-    $TextBoxResult.text += "Aucun des outils RSAT disponibles online ne sont installés`r`n"
+    $TextBoxResult.text += "Aucun des outils RSAT disponibles online ne sont installés sur cette machine`r`n"
 }
 #Fonction des boutons
 $ButtonInstall.Add_Click({
@@ -133,8 +133,10 @@ param(
         if ($WUServer) {
             $message = "Un serveur WSUS local a été trouvé configuré par la stratégie de groupe : $WUServer`r`n"
             $message += "(Vous devrez peut-être configurer des paramètres supplémentaires par GPO si les choses ne fonctionnent pas)`r`n`r`n"
-            $message += "L'objet de stratégie de groupe à voir est le suivant:`r`n'Spécifiez les paramettres d'installation et de réparation de composants facultatifs'`r`n"
-            $message += "Vérifiez qu'il soit actif :`r`n'Téléchargez le contenu de réparation et les fonctionnalitées optionnelles directement à partir de Windows Update...'`r`n"
+            $message += "L'objet de stratégie de groupe à voir est le suivant:`r`n"
+            $message += "'Spécifiez les paramettres d'installation et de réparation de composants facultatifs'`r`n"
+            $message += "Vérifiez qu'il soit actif :`r`n"
+            $message += "'Téléchargez le contenu de réparation et les fonctionnalitées optionnelles directement à partir de Windows Update...'`r`n"
             $message += "***********************************************************"
             $logs += Write-Output $message
             [System.Windows.MessageBox]::Show($message,'WUServer','Ok','Information') | Out-Null
