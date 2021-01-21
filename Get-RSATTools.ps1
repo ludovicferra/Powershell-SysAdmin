@@ -1,6 +1,6 @@
 <#
     Fichier original Get-RSATTools.ps1
-    Fonctionalité : Interface de gestion des outils RSAT pour l'administration Windows
+    Fonctionalité Interface de gestion des outils RSAT pour l'administration Windows
     Mise en forme GUI
     Traduction en Français
     Git : https://github.com/ludovicferra
@@ -51,7 +51,7 @@ $ButtonInstall.height            = 30
 $ButtonInstall.visible           = $false
 $ButtonInstall.location          = New-Object System.Drawing.Point(5,361)
 $ButtonInstall.Font              = 'Microsoft Sans Serif,9'
-#Bouton de désinstallation
+#Bouton de d'installation
 $ButtonUnInstall                   = New-Object system.Windows.Forms.Button
 $ButtonUnInstall.text              = "Désinstaller tous les RSAT"
 $ButtonUnInstall.width             = 285
@@ -61,32 +61,42 @@ $ButtonUnInstall.location          = New-Object System.Drawing.Point(310,361)
 $ButtonUnInstall.Font              = 'Microsoft Sans Serif,9'
 #Concaténation de l'UI
 $Main.controls.AddRange(@($TextBoxResult,$Label1,$ButtonInstall,$ButtonUnInstall))
-#Valide que le programme soit lancé en tant qu'administrateur
+#Valide que le programme soit lancée en tant qu'administrateur
 if (-NOT([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     $message = "Cet outil necessite une élévation"
-    [System.Windows.MessageBox]::Show($message,'Élévation','Ok','Error') | Out-Null
+    [System.Windows.MessageBox]::Show($message,'élévation','Ok','Error') | Out-Null
     break
 }
-#Récupère les outils RSAT non installés
-$NonInstalledRSAT = Get-WindowsCapability -Name RSAT* -Online | Where-Object State -ne "Installed" #Remonte uniquement les RSAT non installés 
+#Récpère les outils RSAT non installés
+$AllRSAT = Get-WindowsCapability -Name RSAT* -Online
+$NonInstalledRSAT = $AllRSAT  | Where-Object State -ne "Installed" #Remonte uniquement les RSAT non installés
+$InstalledRSAT = $AllRSAT  | Where-Object State -eq "Installed" #Remonte uniquement les RSAT non installés
 if ($NonInstalledRSAT.length -gt 0 ) { 
-    $TextBoxResult.text = "Les outils RSAT Suivants ne sont pas installés :`r`n"
-    $TextBoxResult.text += $NonInstalledRSAT | Select-Object state,Displayname | ForEach-Object { Write-Output "$($_.state) : $($_.Displayname)`r`n"}
+    $TextBoxResult.text = "Les outils RSAT qui ne sont pas installés:"
+    $TextBoxResult.text += $NonInstalledRSAT | Format-Table -HideTableHeaders Displayname | Out-String
     $ButtonInstall.Visible = $true
+}
+else {
+    $TextBoxResult.text += "L'ensemble des outils RSAT disponibles online sont installés`r`n"
+}
+if ($InstalledRSAT.length -gt 0 ) { 
+    $TextBoxResult.text += "Les outils RSAT qui sont installés:"
+    $TextBoxResult.text += $InstalledRSAT | Format-Table -HideTableHeaders Displayname | Out-String
     $ButtonUnInstall.visible = $true
 }
-else { 
-    $TextBoxResult.text = "L'ensemble des RSAT disponibles online sont installés`r`n"
-    $ButtonUnInstall.visible = $true
+else {
+    $TextBoxResult.text += "Aucun des outils RSAT disponibles online ne sont installés`r`n"
 }
-
+#Fonction des boutons
 $ButtonInstall.Add_Click({
+    $TextBoxResult.text = "Installation en cours, Patienter...`r`n"
     $ButtonInstall.text = "Installation en cours, Patienter..."
     $ButtonInstall.enabled = $false
     $TextBoxResult.text += InstallRSAT -All
     $ButtonInstall.text = "Installation terminée"
 })
 $ButtonUnInstall.Add_Click({
+    $TextBoxResult.text = "Désinstallation en cours, Patienter...`r`n"
     $ButtonUnInstall.text = "Désinstallation en cours, Patienter..."
     $ButtonUnInstall.enabled = $false
     $TextBoxResult.text += InstallRSAT -Uninstall | Out-String
@@ -106,15 +116,15 @@ param(
 )
     #Création d'un retour de logs :
     $logs = @()
-    #Récupère l'état de redémarrage en attente par le registre
+    #Récpère l'état de redémarrage en attente par le registre
     $CBSRebootKey = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -ErrorAction Ignore
     $WURebootKey = Get-Item "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction Ignore
     if ($CBSRebootKey -OR $WURebootKey) { $TestPendingRebootRegistry = $true }
     else { $TestPendingRebootRegistry = $false }
-    #Récupération de la version de Built Windows
+    #Récpère de la version de Built Windows
     [int]$minimalbuild = 17763
     $WindowsBuild = (Get-WmiObject -Class Win32_OperatingSystem -ErrorAction SilentlyContinue).BuildNumber
-    #Récupération de l'existaance de serveur WSUS
+    #Récpère de l'existance de serveur WSUS
     $WUServer = (Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name WUServer -ErrorAction Ignore).WUServer
     if ($WindowsBuild -gt $minimalbuild) {
         $message = "La version Build de Windows 10 est correcte pour installer les ouilts RSAT.`r`nVersion de build actuelle : $WindowsBuild`r`n"
@@ -123,14 +133,14 @@ param(
         if ($WUServer) {
             $message = "Un serveur WSUS local a été trouvé configuré par la stratégie de groupe : $WUServer`r`n"
             $message += "(Vous devrez peut-être configurer des paramètres supplémentaires par GPO si les choses ne fonctionnent pas)`r`n`r`n"
-            $message += "L'objet de stratégie de groupe à voir est le suivant:`r`n'Spécifiez les paramètres d'installation et de réparation de composants facultatifs'`r`n"
-            $message += "Vérifiez qu'il soit actif :`r`n'Téléchargez le contenu de réparation et les fonctionnalités optionnelles directement à partir de Windows Update...'`r`n"
+            $message += "L'objet de stratégie de groupe à voir est le suivant:`r`n'Spécifiez les paramettres d'installation et de réparation de composants facultatifs'`r`n"
+            $message += "Vérifiez qu'il soit actif :`r`n'Téléchargez le contenu de réparation et les fonctionnalitées optionnelles directement à partir de Windows Update...'`r`n"
             $message += "***********************************************************"
             $logs += Write-Output $message
             [System.Windows.MessageBox]::Show($message,'WUServer','Ok','Information') | Out-Null
         }
         if ($TestPendingRebootRegistry) {
-            $message = "Un redémarrage est en attente.`r`nLe script continuera, mais les RSAT risquent de ne pas être installés / désinstallés correctement`r`n"
+            $message = "Un redémarrage est en attente.`r`nLe script continuera, mais les RSAT risquent de ne pas être installées / désinstallées correctement`r`n"
             $message += "***********************************************************`r`n"
             $logs += Write-Output $message
             $message += "On continue tout de même ?"
@@ -145,12 +155,10 @@ param(
                 if ($Install) {
                     foreach ($Item in $Install) {
                         $RsatItem = $Item.Name
-                        $message = "Installation de :`r`n$($RsatItem | Out-String)"
-                        $logs += Write-Output $message
-                        [System.Windows.MessageBox]::Show($message,'Installation','Ok','Information') | Out-Null
-                        try { Add-WindowsCapability -Online -Name $RsatItem }
+                        $logs += Write-Output "Installation de : $($RsatItem | Out-String)"
+                        try { Add-WindowsCapability -Online -Name $RsatItem  | Out-Null }
                         catch [System.Exception] {
-                            $message = "Erreur à l'installation de :`r`n$RsatItem`r`n"
+                            $message = "##Erreur d'installation de : $RsatItem`r`n"
                             $message += "Erreur :`r`n$($_.Exception.Message)"
                             $logs += Write-Output $message
                             [System.Windows.MessageBox]::Show($message,'Erreur installation','Ok','Error') | Out-Null
@@ -160,7 +168,7 @@ param(
                 else {
                     $message = "Toutes les fonctionnalités RSAT semblent déjà installées"
                     $logs += Write-Output $message
-                    [System.Windows.MessageBox]::Show($message,'Déjà installées','Ok','Information')  | Out-Null
+                    [System.Windows.MessageBox]::Show($message,'Déjà installé','Ok','Information')  | Out-Null
                 }
             }
             #Désinstallation de tous les outils RSTAT
@@ -176,36 +184,36 @@ param(
                     #Première requête pour les fonctionnalités RSAT installées
                     $Installed = Get-WindowsCapability -Online | Where-Object {$_.Name -like "Rsat*" -AND $_.State -eq "Installed" -AND $_.Name -notlike "Rsat.ServerManager*" -AND $_.Name -notlike "Rsat.GroupPolicy*" -AND $_.Name -notlike "Rsat.ActiveDirectory*"} 
                     if ($Installed) {
-                        # Désinstallation de la première série de fonctionnalités RSAT - certaines fonctionnalités semblent être verrouillées jusqu'à ce que d'autres soient désinstallées en premier
-                        $logs += Write-Output "Désinstallation de la première série de fonctionnalités RSAT`r`n"
+                        # Désinstallation de la première série de fonctionnalitées RSAT - certaines fonctionnalitées semblent être verrouillées jusqu'à ce que d'autres soient désinstallées en premier
+                        $logs += Write-Output "Désinstallation de la première série de fonctionnalités RSAT :"
                         foreach ($Item in $Installed) {
                             $RsatItem = $Item.Name
-                            $logs += Write-Output "Désinstallation de la fonctionnalité RSAT :`r`n$RsatItem"
-                            try { Remove-WindowsCapability -Name $RsatItem -Online }
+                            $logs += Write-Output "Désinstallation de la fonctionnalité RSAT : $RsatItem"
+                            try { Remove-WindowsCapability -Name $RsatItem -Online | Out-Null }
                             catch [System.Exception] { 
                                 $logs += Write-Output "Erreur à la désinstallation de : $RsatItem`r`n"
                                 $logs += Write-Output "Avec l'erreur :`r`n$($_.Exception.Message)"
                                 $logs += Write-Output $message
                             }
                         }   
-                    }
-                    #Interrogation des fonctionnalités RSAT installées pour finir la désinstallation
-                    $Installed = Get-WindowsCapability -Online | Where-Object {$_.Name -like "Rsat*" -AND $_.State -eq "Installed"}
-                    if ($Installed) { 
-                        $logs += Write-Output "Désinstallation de la seconde série de fonctionnalités RSAT"
-                        foreach ($Item in $Installed) {
-                            $RsatItem = $Item.Name
-                            $logs += Write-Output "Désinstallation de $RsatItem"
-                            try { Remove-WindowsCapability -Name $RsatItem -Online }
-                            catch [System.Exception] {
-                                $logs += Write-Output "Erreur à la désinstallation de :`r`n$RsatItem`r`n"
-                                $logs += Write-Output= "Avec l'erreur :`r`n$($_.Exception.Message)"
-                            }
-                        } 
+                        #Interrogation des fonctionnalitées RSAT installées pour finir la désinstallation
+                        $Installed = Get-WindowsCapability -Online | Where-Object {$_.Name -like "Rsat*" -AND $_.State -eq "Installed"}
+                        if ($Installed) { 
+                            $logs += Write-Output "`r`nDésinstallation de la seconde série de fonctionnalitées RSAT :"
+                            foreach ($Item in $Installed) {
+                                $RsatItem = $Item.Name
+                                $logs += Write-Output "Désinstallation de $RsatItem"
+                                try { Remove-WindowsCapability -Name $RsatItem -Online | Out-Null }
+                                catch [System.Exception] {
+                                    $logs += Write-Output "Erreur à la désinstallation de :`r`n$RsatItem`r`n"
+                                    $logs += Write-Output= "Avec l'erreur :`r`n$($_.Exception.Message)"
+                                }
+                            } 
+                        }
                     }
                     else {
-                        $message = "Toutes les fonctionnalités RSAT semblent déjà désinstallées"
-                        [System.Windows.MessageBox]::Show($message,'Déjà installées','Ok','Information')  | Out-Null
+                        $message = "Toutes les fonctionnalitées RSAT semblent déjà désinstallées"
+                        [System.Windows.MessageBox]::Show($message,'Déjà désinstallées','Ok','Information')  | Out-Null
                     }
                 }
                 else { $logs += Write-Output "`r`nDésinstallation annulée`r`n" }
@@ -213,7 +221,7 @@ param(
         }
     }
     else {
-        $message = "La version Build de Windows 10 ne correspond pas pour installer les ouilts RSAT à la demande.`r`nVersion de build actuelle : $WindowsBuild`r`n(Nécéssite une version $minimalbuild ou supérieure)"
+        $message = "La version Build de Windows 10 ne correspond pas pour installer les ouilts RSAT à la demande.`r`nVersion de build actuelle : $WindowsBuild`r`n(Nécessite une version $minimalbuild ou supérieure)"
         $logs = Write-Output "Cette version de windows n'est pas supportée"
         [System.Windows.MessageBox]::Show($message,'Mauvaise Build','Ok','Warning') | Out-Null
     }
