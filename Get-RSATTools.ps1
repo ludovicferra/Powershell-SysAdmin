@@ -21,7 +21,7 @@ Add-Type -AssemblyName PresentationFramework
 $Main                            = New-Object system.Windows.Forms.Form
 $Main.ClientSize                 = '600,600'
 $Main.text                       = "Get-RSATTester"
-$Main.BackColor                  = "#f5a623"
+$Main.BackColor                  = "#7C7C7C"
 $Main.TopMost                    = $false
 $Main.FormBorderStyle            = 'Fixed3D'
 $Main.MaximizeBox                = $false
