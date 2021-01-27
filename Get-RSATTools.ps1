@@ -137,7 +137,7 @@ param(
             $message += "'Spécifiez les paramettres d'installation et de réparation de composants facultatifs'`r`n"
             $message += "Vérifiez qu'il soit actif :`r`n"
             $message += "'Téléchargez le contenu de réparation et les fonctionnalitées optionnelles directement à partir de Windows Update...'`r`n"
-            $message += "***********************************************************"
+            $message += "***********************************************************`r`n"
             $logs += Write-Output $message
             [System.Windows.MessageBox]::Show($message,'WUServer','Ok','Information') | Out-Null
         }
